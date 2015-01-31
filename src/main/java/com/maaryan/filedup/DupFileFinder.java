@@ -1,25 +1,23 @@
 package com.maaryan.filedup;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
-import com.maaryan.filedup.conf.DefaultConfigFactory;
-import com.maaryan.filedup.conf.FileDupConfig;
-import com.maaryan.filedup.vo.FileMeta;
+import com.maaryan.fhi.FileHashIndexer;
+import com.maaryan.fhi.FileHashIndexerFullPath;
+import com.maaryan.fhi.conf.FileHashIndexerConfig;
+import com.maaryan.fhi.vo.FileHashIndex;
+import com.maaryan.fhi.vo.FileMeta;
 
 public class DupFileFinder implements Runnable{
 	private List<Set<FileMeta>> duplicateFiles;
-	private FileDupConfig fileDupConfig;
-	private FileIndexer fileIndexer;
-	public DupFileFinder(FileDupConfig fileDupConfig) {
-		this.fileDupConfig = fileDupConfig;
-		this.fileIndexer = new FileIndexer(fileDupConfig);
+	private FileHashIndexer fileHashIndexer;
+	public DupFileFinder(FileHashIndexerConfig indexerConfig,Set<Path> foldersToScan) {
+		fileHashIndexer = new FileHashIndexerFullPath(foldersToScan,indexerConfig);
 	}
-	public DupFileFinder(List<File> foldersToScan) {
-		fileDupConfig = DefaultConfigFactory.getFileDupCanonicalModeConfig();
-		fileDupConfig.setFoldersToScan(foldersToScan);
-		this.fileIndexer = new FileIndexer(fileDupConfig);
+	public DupFileFinder(Set<Path> foldersToScan) {
+		fileHashIndexer = new FileHashIndexerFullPath(foldersToScan);
 	}
 	
 	@Override
@@ -31,10 +29,9 @@ public class DupFileFinder implements Runnable{
 	}
 	public List<Set<FileMeta>> findDuplicates(boolean indexFiles){
 		if(indexFiles){
-			fileIndexer.indexFiles();
-			System.out.println(fileIndexer.getFileIndex());
+			FileHashIndex fileHashIndex = fileHashIndexer.indexFiles();
+			duplicateFiles = fileHashIndex.findDuplicates();
 		}
-		duplicateFiles = fileIndexer.findDuplicates();
 		return duplicateFiles;
 	}
 }
